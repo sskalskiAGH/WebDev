@@ -10,32 +10,43 @@ router = APIRouter(prefix="/api/exam-terms", tags=["exam-terms"])
 @router.post("/", response_model=schemas.ExamTermResponse)
 def create_exam_term(term: schemas.ExamTermCreate, db: Session = Depends(get_db)):
     """Tworzy propozycję terminu egzaminu z walidacją"""
-    
+
     # Sprawdź czy egzamin istnieje
     exam = crud.get_exam(db, term.exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="Egzamin nie znaleziony")
-    
+
+    # Walidacja: czy data mieści się w terminie sesji (admin może obejść)
+    if term.proposed_by_role != models.UserRole.ADMIN:
+        if not crud.is_date_in_session(db, term.data):
+            sessions = crud.get_current_sessions(db)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Termin egzaminu musi być w okresie sesji. "
+                       f"Sesja zasadnicza: {sessions['zasadnicza'].data_start} - {sessions['zasadnicza'].data_end}, "
+                       f"Sesja poprawkowa: {sessions['poprawkowa'].data_start} - {sessions['poprawkowa'].data_end}"
+            )
+
     # Walidacja: czy sala jest wolna
     if not crud.check_room_availability(db, term.data, term.godzina, term.sala):
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"Sala {term.sala} jest już zajęta w dniu {term.data} o godzinie {term.godzina}"
         )
-    
+
     # Walidacja: czy studenci nie mają już egzaminu tego dnia
     if not crud.check_student_availability(
-        db, 
-        term.data, 
-        exam.subject.kierunek, 
-        exam.subject.typ_studiow, 
+        db,
+        term.data,
+        exam.subject.kierunek,
+        exam.subject.typ_studiow,
         exam.subject.rok
     ):
         raise HTTPException(
             status_code=400,
             detail=f"Studenci {exam.subject.kierunek} ({exam.subject.typ_studiow}, rok {exam.subject.rok}) mają już egzamin w dniu {term.data}"
         )
-    
+
     return crud.create_exam_term(db, term)
 
 
@@ -105,4 +116,23 @@ def validate_students(
     return schemas.ValidationResponse(
         valid=is_available,
         message=None if is_available else "Studenci mają już egzamin tego dnia"
+    )
+
+
+@router.get("/validation/check-session-date", response_model=schemas.ValidationResponse)
+def validate_session_date(
+    data: str = Query(...),
+    db: Session = Depends(get_db)
+):
+    """Sprawdza czy data mieści się w terminie sesji"""
+    is_valid = crud.is_date_in_session(db, data)
+    if is_valid:
+        return schemas.ValidationResponse(valid=True, message=None)
+
+    sessions = crud.get_current_sessions(db)
+    return schemas.ValidationResponse(
+        valid=False,
+        message=f"Data musi być w terminie sesji: "
+                f"{sessions['zasadnicza'].data_start} - {sessions['zasadnicza'].data_end} (zasadnicza) lub "
+                f"{sessions['poprawkowa'].data_start} - {sessions['poprawkowa'].data_end} (poprawkowa)"
     )

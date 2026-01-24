@@ -3,6 +3,7 @@ import UserSelector from './components/UserSelector';
 import ExamList from './components/ExamList';
 import ProposeTermForm from './components/ProposeTermForm';
 import GanttChart from './components/GanttChart';
+import SessionBanner from './components/SessionBanner';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -20,8 +21,10 @@ function App() {
   return (
     <div style={styles.app}>
       <header style={styles.header}>
-        <h1 style={styles.title}>System Organizacji Egzaminów</h1>
+        <h1 style={styles.title}>System Organizacji Egzaminow</h1>
       </header>
+
+      <SessionBanner />
 
       <UserSelector
         currentUser={currentUser}
@@ -36,13 +39,13 @@ function App() {
               style={activeView === 'list' ? styles.tabActive : styles.tab}
               onClick={() => setActiveView('list')}
             >
-              📋 Lista egzaminów
+              Lista egzaminow
             </button>
             <button
               style={activeView === 'gantt' ? styles.tabActive : styles.tab}
               onClick={() => setActiveView('gantt')}
             >
-              📊 Wykres Gantta
+              Wykres Gantta
             </button>
           </div>
 

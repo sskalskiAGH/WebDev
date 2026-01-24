@@ -152,7 +152,7 @@ for exam in exams:
 
 db.commit()
 
-print("✅ Baza danych zainicjalizowana!")
+print("Baza danych zainicjalizowana!")
 print(f"   Demo users: {len(demo_users)}")
 print(f"   Sale: {len(rooms)}")
 print(f"   Okresy sesji: {len(session_periods)}")
