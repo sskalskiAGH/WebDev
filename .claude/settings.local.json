@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(magick:*)",
+      "Bash(convert:*)",
+      "Bash(inkscape --version:*)",
+      "Bash(gswin64c:*)",
+      "Bash(gswin32c:*)",
+      "Bash(gs:*)",
+      "Bash(ls -la \"C:\\\\Users\\\\stola\\\\Documents\\\\TSAW\\\\WebDev\\\\frontend\\\\public\\\\img\"\" 2>/dev/null || dir \"C:UsersstolaDocumentsTSAWWebDevfrontendpublicimg \")",
+      "Bash(dir \"C:\\\\Users\\\\stola\\\\Documents\\\\TSAW\\\\WebDev\\\\frontend\\\\public\\\\img\")",
+      "Bash(dir \"C:\\\\Users\\\\stola\\\\Documents\\\\TSAW\\\\WebDev\\\\frontend\\\\src\\\\assets\")"
+    ]
+  }
+}

@@ -20,6 +20,12 @@ def list_session_periods(db: Session = Depends(get_db)):
     return crud.get_session_periods(db)
 
 
+@router.get("/session-periods/current", response_model=schemas.CurrentSessionResponse)
+def get_current_sessions(db: Session = Depends(get_db)):
+    """Pobiera aktualne/nadchodzące terminy sesji (zasadniczą i poprawkową)"""
+    return crud.get_current_sessions(db)
+
+
 # Subjects
 @router.post("/subjects", response_model=schemas.SubjectResponse)
 def create_subject(subject: schemas.SubjectCreate, db: Session = Depends(get_db)):
@@ -43,3 +49,15 @@ def list_subjects(
 def list_demo_users(db: Session = Depends(get_db)):
     """Lista przykładowych użytkowników do dropdowna"""
     return crud.get_demo_users(db)
+
+
+# Admin - usuwanie duplikatów
+@router.delete("/admin/remove-duplicates")
+def remove_duplicates(db: Session = Depends(get_db)):
+    """Usuwa duplikaty z wszystkich tabel (tylko admin)"""
+    result = crud.remove_duplicates(db)
+    total = sum(result.values())
+    return {
+        "message": f"Usunięto {total} duplikatów",
+        "details": result
+    }

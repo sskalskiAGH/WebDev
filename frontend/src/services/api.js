@@ -28,6 +28,14 @@ export const approveExamTerm = (id, data) => api.put(`/api/exam-terms/${id}`, da
 // Session Periods
 export const getSessionPeriods = () => api.get('/api/session-periods');
 export const createSessionPeriod = (data) => api.post('/api/session-periods', data);
+export const getCurrentSessions = () => api.get('/api/session-periods/current');
+
+// Validation - session date
+export const checkSessionDate = (data) =>
+  api.get('/api/exam-terms/validation/check-session-date', { params: { data } });
+
+// Admin
+export const removeDuplicates = () => api.delete('/api/admin/remove-duplicates');
 
 // Validation
 export const checkRoomAvailability = (params) =>
