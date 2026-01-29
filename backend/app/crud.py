@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app import models, schemas
 from typing import List, Optional
+from datetime import datetime
 
 
 # Demo Users
@@ -129,6 +130,51 @@ def get_session_periods(db: Session) -> List[models.SessionPeriod]:
     return db.query(models.SessionPeriod).order_by(models.SessionPeriod.data_start.desc()).all()
 
 
+def get_current_sessions(db: Session) -> dict:
+    """
+    Pobiera aktualne/nadchodzące sesje (zasadniczą i poprawkową).
+    Na razie zwraca zasymulowane dane.
+    """
+    # Symulowane dane sesji
+    zasadnicza = models.SessionPeriod(
+        id=1,
+        semestr="zimowy",
+        rok_akademicki="2025/2026",
+        data_start="2026-02-01",
+        data_end="2026-02-07"
+    )
+    poprawkowa = models.SessionPeriod(
+        id=2,
+        semestr="zimowy_poprawkowa",
+        rok_akademicki="2025/2026",
+        data_start="2026-02-13",
+        data_end="2026-02-27"
+    )
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    is_active = (zasadnicza.data_start <= today <= zasadnicza.data_end or
+                 poprawkowa.data_start <= today <= poprawkowa.data_end)
+
+    return {
+        "zasadnicza": zasadnicza,
+        "poprawkowa": poprawkowa,
+        "is_session_active": is_active,
+        "message": "Sesja zimowa 2025/2026"
+    }
+
+
+def is_date_in_session(db: Session, data: str) -> bool:
+    """Sprawdza czy podana data mieści się w terminie sesji."""
+    sessions = get_current_sessions(db)
+    zasadnicza = sessions["zasadnicza"]
+    poprawkowa = sessions["poprawkowa"]
+
+    in_zasadnicza = zasadnicza.data_start <= data <= zasadnicza.data_end
+    in_poprawkowa = poprawkowa.data_start <= data <= poprawkowa.data_end
+
+    return in_zasadnicza or in_poprawkowa
+
+
 # Walidacje
 def check_room_availability(db: Session, data: str, godzina: str, sala: str, exclude_term_id: Optional[int] = None) -> bool:
     """Sprawdza czy sala jest wolna w danym terminie"""
@@ -186,6 +232,77 @@ def get_rooms(db: Session) -> List[models.Room]:
 def get_room_by_name(db: Session, nazwa: str) -> Optional[models.Room]:
     """Pobiera salę po nazwie"""
     return db.query(models.Room).filter(models.Room.nazwa == nazwa).first()
+
+
+def remove_duplicates(db: Session) -> dict:
+    """
+    Usuwa duplikaty z wszystkich tabel.
+    Zwraca liczbę usuniętych rekordów dla każdej tabeli.
+    """
+    removed = {
+        "subjects": 0,
+        "exams": 0,
+        "exam_terms": 0,
+        "rooms": 0,
+        "demo_users": 0
+    }
+
+    # Duplikaty Subject (ta sama nazwa, kierunek, typ_studiow, rok)
+    subjects = db.query(models.Subject).all()
+    seen_subjects = set()
+    for s in subjects:
+        key = (s.nazwa, s.kierunek, s.typ_studiow, s.rok)
+        if key in seen_subjects:
+            db.delete(s)
+            removed["subjects"] += 1
+        else:
+            seen_subjects.add(key)
+
+    # Duplikaty Exam (ten sam subject_id i prowadzacy_name)
+    exams = db.query(models.Exam).all()
+    seen_exams = set()
+    for e in exams:
+        key = (e.subject_id, e.prowadzacy_name)
+        if key in seen_exams:
+            db.delete(e)
+            removed["exams"] += 1
+        else:
+            seen_exams.add(key)
+
+    # Duplikaty ExamTerm (ten sam exam_id, data, godzina, sala)
+    terms = db.query(models.ExamTerm).all()
+    seen_terms = set()
+    for t in terms:
+        key = (t.exam_id, t.data, t.godzina, t.sala)
+        if key in seen_terms:
+            db.delete(t)
+            removed["exam_terms"] += 1
+        else:
+            seen_terms.add(key)
+
+    # Duplikaty Room (ta sama nazwa)
+    rooms = db.query(models.Room).all()
+    seen_rooms = set()
+    for r in rooms:
+        if r.nazwa in seen_rooms:
+            db.delete(r)
+            removed["rooms"] += 1
+        else:
+            seen_rooms.add(r.nazwa)
+
+    # Duplikaty DemoUser (ta sama nazwa i rola)
+    users = db.query(models.DemoUser).all()
+    seen_users = set()
+    for u in users:
+        key = (u.name, u.role)
+        if key in seen_users:
+            db.delete(u)
+            removed["demo_users"] += 1
+        else:
+            seen_users.add(key)
+
+    db.commit()
+    return removed
 
 
 def check_room_capacity_and_availability(

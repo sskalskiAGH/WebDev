@@ -142,3 +142,11 @@ class RoomAvailabilityResponse(BaseModel):
     available: bool
     message: str
     sala: Optional[RoomResponse] = None
+
+
+# Current session periods response
+class CurrentSessionResponse(BaseModel):
+    zasadnicza: Optional[SessionPeriodResponse] = None
+    poprawkowa: Optional[SessionPeriodResponse] = None
+    is_session_active: bool
+    message: str
